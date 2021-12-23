@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-tekton-listener-config
+  namespace: tekton-pipelines
+data:
+  config: |
+    # Global config for all pipelines
+    globalGitHubSecretName: github-global-secret
+    #globalServiceAccount: pipelinerun-sa
+    globalExtraParams:
+      - name: registry
+        value: "quay.io"
+
+    # Each pipeline
+    pipelines:
+      - name: microservice-push
+        # Specific secret for this pipeline
+        #gitHubSecretName: github-02
+        #serviceAccount: pipelinerun-sa
+
+        # Extra params for this pipeline
+        #extraParams:
+        #  - name: test
+        #    value: test_value
+
+        # Workspaces:
+        # name: is the name of Configmap with the configuration
+        # type: type of workspace (allowed types: volumeClaimTemplate, persistentVolumeClaim, configmap, secret and emptyDir)
+        #
+        # Note: emptyDir workspace does not need ConfigMap resource
+        workspaces:
+          - name: ws-volume-claim-template
+            type: volumeClaimTemplate
+          #- name: ws-persistent-volume-claim
+          #  type: persistentVolumeClaim
+          #- name: ws-cm-source-01
+          #  type: configmap
+          #- name: ws-secret-source-01
+          #  type: secret
+          #- name: ws-source-emptydir
+          #  type: emptyDir
+        #resources:
+        #  - name: source-repo
+        #    resourceRef: source-repo
+        
+        # Notes: - When expressions are ANDed together (they must all be satisfied in order to match)
+        #        - Allowed operators equal, notequal, contains, notcontain
+        #        - contains and notcontain are checked as regex, so a regex value is allowed
+        #        - Values for body type are jsonpath from library https://github.com/tidwall/gjson
+        when:
+          - kind: query
+            keys:
+              - "pipeline"
+            values:
+              - operator: "equal"
+                data: "microservice"
+
+          - kind: query
+            keys:
+              - "run"
+            values:
+              - operator: "equal"
+                data: "true"
+
+          - kind: payload
+            keys:
+              - "ref"
+              - "base_ref"
+            values:
+              - operator: "contains"
+                data: "test-webhook"
+
+              - operator: "contains"
+                data: "develop"
+
+              - operator: "contains"
+                data: "master"
+
+          - kind: header
+            keys:
+              - "X-Github-Event"
+            values:
+              - operator: "equal"
+                data: "push"

@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: custom-tekton-listener
+  namespace: custom-tekton-listener
+
+  labels:
+    app: custom-tekton-listener
+
+spec:
+  replicas: 1
+
+  strategy:
+    rollingUpdate:
+      maxSurge: "25%"
+      maxUnavailable: "25%"
+
+  selector:
+    matchLabels:
+      app: custom-tekton-listener
+
+  template:
+    metadata:
+      labels:
+        app: custom-tekton-listener
+
+    spec:
+      serviceAccountName: custom-tekton-listener
+
+      containers:
+      - name: custom-tekton-listener
+        image: quay.io/jberchez-redhat/custom-tekton-listener:v1.7
+        ports:
+          - name: http
+            containerPort: 8080
+
+        env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+
+          - name: CHECK_GITHUB_IPS
+            value: "true"
+
+        livenessProbe:
+          httpGet:
+            path: /liveness
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
+
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
+
+        startupProbe:
+          httpGet:
+            path: /startup
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
+

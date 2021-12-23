@@ -1,0 +1,35 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: get-commit-id
+spec:
+  params:
+    - name: payloadBase64
+      description: Payload from Webhook encoded in base64
+      type: string
+
+  results:
+    - name: commit-id
+      description: Commit id
+
+  steps:
+    - name: get-commit-id
+      image: quay.io/jberchez-redhat/custom-utils:v2.0
+      script: |
+        #! /usr/bin/env bash
+        
+        set -e
+        
+        # Decode payload
+        payload="$(echo "$(params.payloadBase64)" | base64 -d)"
+
+        # Get commit id from payload
+        commitId=$(echo "$payload" | jq -r '.head_commit.id' 2>&1)
+
+        if [ "$commitId" == "null" ]; then
+           echo "[ERROR] .head_commit.id not found in payload"
+           exit 1
+        fi
+
+        echo -n "$commitId" > /tekton/results/commit-id
+        echo "[OK] Got commit id \"$commitId\" succesfully from payload"

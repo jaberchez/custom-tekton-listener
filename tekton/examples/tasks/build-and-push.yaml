@@ -1,0 +1,46 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-and-push
+spec:
+  params:
+    - name: dockerImage
+      description: Docker image
+      type: string
+
+    - name: nameFolderRepo
+      description: Repos's name folder
+      type: string
+
+    - name: dockerfile
+      type: string
+      default: "./Dockerfile"
+
+  workspaces:
+    - name: source
+    
+  steps:
+    - name: build-and-push
+      workingDir: $(workspaces.source.path)/$(params.nameFolderRepo)
+      image: gcr.io/kaniko-project/executor:latest
+      args:
+        - --dockerfile=$(params.dockerfile)
+        - --context=$(workspaces.source.path)/$(params.nameFolderRepo) 
+        - --destination=$(params.dockerImage)
+        - --skip-tls-verify
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - name: registry-creds
+          mountPath: /kaniko/.docker
+
+  volumes:
+    - name: registry-creds
+      secret:
+        secretName: registry-creds
+        items:
+          - key: .dockerconfigjson
+            path: config.json
+    #- name: registry-creds
+    #  configMap:
+    #    name: registry-creds

@@ -1,0 +1,81 @@
+# Note: This task gets the repo and branch from Github payload. Since payloads are different depending on event, 
+#       we should ensure that this task runs if event is push. You can set when clause in pipeline or if you
+#       are using custom-tekton-listener you can configure when clauses in its Configmap
+
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: clone-repo
+spec:
+  params:
+    - name: payloadBase64
+      description: Payload from Webhook encoded in base64
+      type: string
+
+  workspaces:
+    - name: source
+
+  results:
+    - name: name-folder-repo
+      description: Repo's folder name
+    
+  steps:
+    - name: clone-repo-push-event
+      image: quay.io/jberchez-redhat/custom-utils:v2.0
+      workingDir: $(workspaces.source.path)
+      script: |
+        #! /usr/bin/env bash
+        
+        set -e
+
+        filePayloadTmp="/tmp/payload.json"
+        payload=""
+        nameFolderRepo="repo"
+        cloneUrl=""
+        branch=""
+
+        # Decode payload
+        payload=$(echo "$(params.payloadBase64)" | base64 -d)
+
+        # Get repo from payload
+        cloneUrl=$(echo "$payload" | jq -r '.repository.clone_url' 2>&1)
+
+        if [ "$cloneUl" == "null" ]; then
+           echo "[ERROR] .repository.clone_url not found in payload"
+           exit 1
+        fi
+
+        # Get ref and base_ref from payload to find the branch
+        ref=$(echo "$payload" | jq -r '.ref' 2>&1)
+        baseRef=$(echo "$payload" | jq -r '.base_ref' 2>&1)
+
+        if [[ "$ref" == "null" && "$baseRef" == "null" ]]; then
+           echo "[ERROR] Problems getting branch from payload: not found .ref nor .base_ref"
+           exit 1
+        fi
+        
+        if echo "$ref" | grep -qw "heads"; then
+           branch=$(echo ${ref##*/})
+        else
+           # No heads in ref, probably tags. Try in base_ref
+           if echo "$baseRef" | grep -qw "heads"; then
+              branch=$(echo ${baseRef##*/})
+           fi
+        fi
+
+        if [ -z "$branch" ]; then
+           echo "[ERROR] Branch not found in payload"
+           exit 1
+        fi
+
+        # Everything OK, clone repo
+        git clone "$cloneUrl" -b "$branch" $nameFolderRepo
+
+        # Note: Very important not add carriage return in result
+        echo -n "$nameFolderRepo" > /tekton/results/name-folder-repo
+        
+        echo "[OK] Repo \"$cloneUrl\" cloned succesfully in folder ${nameFolderRepo}"
+
+      env:
+        - name: GIT_SSL_NO_VERIFY
+          value: "true"

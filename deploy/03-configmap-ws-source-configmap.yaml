@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ws-source-configmap
+  namespace: custom-tekton-listener
+data:
+  template: |
+    - name: source-configmap
+      configmap:
+        name: source-configmap

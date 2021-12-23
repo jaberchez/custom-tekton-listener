@@ -1,0 +1,54 @@
+# This RBAC file should be applied if custom-tekton-listener is deployed in a different namespace
+# where the tekton pipelines live
+# In this case custom-tekton-listener is deployed in custom-tekton-listener namespace and pipelines
+# in tekton-pipelines
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: custom-tekton-listener
+  namespace: tekton-pipelines
+rules:
+- apiGroups: [""]
+  resources: 
+    - "configmaps"
+    - "secrets"
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tekton-pipelineruns-create
+rules:
+- apiGroups: ["tekton.dev"]
+  resources: 
+    - "pipelineruns"
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: custom-tekton-listener
+  namespace: tekton-pipelines
+subjects:
+- kind: ServiceAccount
+  name: custom-tekton-listener
+  namespace: tekton-pipelines
+roleRef:
+  kind: Role 
+  name: custom-tekton-listener
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: create-pipelineruns
+  namespace: tekton-pipelines
+subjects:
+- kind: ServiceAccount
+  name: custom-tekton-listener
+  namespace: custom-tekton-listener
+roleRef:
+  kind: ClusterRole 
+  name: tekton-pipelineruns-create
+  apiGroup: rbac.authorization.k8s.io

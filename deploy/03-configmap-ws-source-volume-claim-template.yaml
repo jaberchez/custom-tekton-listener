@@ -1,0 +1,19 @@
+# Note: ws-source-volume-claim-template is the name of the ConfigMap which custom-tekton-listener gets, but
+#       the real name of the workspace for tekton pipeline is in the template, in this case "source"
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ws-source-volume-claim-template
+  namespace: custom-tekton-listener
+data:
+  template: |
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          resources:
+            requests:
+              storage: 5Gi
+          volumeMode: Filesystem
+          accessModes:
+            - ReadWriteOnce

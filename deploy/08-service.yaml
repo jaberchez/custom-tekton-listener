@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: custom-tekton-listener
+  namespace: custom-tekton-listener
+
+  labels:
+    app: custom-tekton-listener
+
+spec:
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: http
+
+  selector:
+    app: custom-tekton-listener
