@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"encoding/base64"
-	"encoding/json"
 
 	"github.com/Masterminds/sprig"
 	"github.com/jaberchez/custom-tekton-listener/pkg/config"
@@ -93,19 +92,9 @@ func (p *PipelineRun) Start() error {
 		return err
 	}
 
-	//filename := fmt.Sprintf("/tmp/workspace-template-%s.yaml", p.ID)
-	//
-	//_ = createTemplateFile(filename, tplStr)
-
 	// Create PipelineRun in Kubernetes
 	return k8s.CreateObject(tektonApiGroup, tektonApiVersion, pipelineRunKind, os.Getenv("PIPELINES_NAMESPACE"), tplStr)
 }
-
-//func createTemplateFile(filename string, fileData string) error {
-//	d := []byte(fileData)
-//
-//	return os.WriteFile(filename, d, 0644)
-//}
 
 func (p *PipelineRun) renderTemplate() (string, error) {
 	p.Namespace = os.Getenv("PIPELINES_NAMESPACE")
@@ -162,76 +151,3 @@ func (p *PipelineRun) renderTemplate() (string, error) {
 
 	return s, nil
 }
-
-func convertMapToString(m map[string]string) (string, error) {
-	jsonString, err := json.Marshal(m)
-
-	if err != nil {
-		return "", err
-	}
-
-	return string(jsonString), nil
-}
-
-//func (p *PipelineRun) getDataFromGithubPayload(payload map[string]interface{}, dataName string) (string, error) {
-//	if dataName == "cloneUrl" {
-//		if !existsFieldFromMap(payload, "repository") {
-//			return "", errors.New("field repository not found in payload")
-//		}
-//
-//		repo := payload["repository"].(map[string]interface{})
-//
-//		if !existsFieldFromMap(repo, "clone_url") {
-//			return "", errors.New("field repository.clone_url not found in payload")
-//		}
-//
-//		return repo["clone_url"].(string), nil
-//	} else if dataName == "sshUrl" {
-//		if !existsFieldFromMap(payload, "repository") {
-//			return "", errors.New("field repository not found in payload")
-//		}
-//
-//		repo := payload["repository"].(map[string]interface{})
-//
-//		if !existsFieldFromMap(repo, "ssh_url") {
-//			return "", errors.New("field repository.ssh_url not found in payload")
-//		}
-//
-//		return repo["ssh_url"].(string), nil
-//	} else if dataName == "branch" {
-//		if !existsFieldFromMap(payload, "ref") {
-//			return "", errors.New("field ref not found in payload")
-//		}
-//
-//		pos := strings.LastIndex(payload["ref"].(string), "/")
-//
-//		if pos < 0 {
-//			return "", errors.New("uname to get branch name from refs")
-//		}
-//
-//		branch := payload["ref"].(string)
-//		branch = branch[pos+1:]
-//
-//		return branch, nil
-//	} else if dataName == "commitId" {
-//		if !existsFieldFromMap(payload, "head_commit") {
-//			return "", errors.New("field head_commit not found in payload")
-//		}
-//
-//		repo := payload["head_commit"].(map[string]interface{})
-//
-//		if !existsFieldFromMap(repo, "id") {
-//			return "", errors.New("field head_commit.id not found in payload")
-//		}
-//
-//		return repo["id"].(string), nil
-//	}
-//
-//	return "", nil
-//}
-//
-//func existsFieldFromMap(m map[string]interface{}, field string) bool {
-//	_, ok := m[field]
-//
-//	return ok
-//}

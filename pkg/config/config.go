@@ -43,11 +43,6 @@ var (
 
 	whenKinds []string = []string{whenKindHeader, whenKindPayload, whenKindQuery}
 
-	//operatorTypes []string = []string{inOperatorType, notinOperatorType}
-
-	//resourcesTypes []string = []string{ResourceGitType, ResourceImageType}
-
-	//valuesTypes     []string = []string{valueTypeRegex, valueTypeExact}
 	valuesOperators []string = []string{valueOperatorEqual, valueOperatorNotEqual,
 		valueOperatorContains, valueOperatorNotContains}
 )
